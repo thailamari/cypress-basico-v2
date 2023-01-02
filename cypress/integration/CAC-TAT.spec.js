@@ -4,6 +4,7 @@ beforeEach(function(){
     cy.visit('./src/index.html')
    });
 describe('Central de Atendimento ao Cliente TAT',function () {
+    const threeSecondsInMs = 3000
     it('verifica o título da aplicação', function() {  
         cy.title().should('be.equal', 'Central de Atendimento ao Cliente TAT')
       
@@ -15,6 +16,7 @@ describe('Central de Atendimento ao Cliente TAT',function () {
         cy.get('#lastName').type('Agard')
         cy.get('#email').type('thailamari@thaila.com')
         cy.get('#open-text-area').type(longText, {delay: 1})
+        Cypress._.repeat('123', 3) // escreve 3x 123
         cy.contains('button', 'Enviar').click()
         cy.get('.success').should('be.visible')
             
@@ -180,5 +182,60 @@ describe('Central de Atendimento ao Cliente TAT',function () {
         cy.contains('Talking About Testing').should('be.visible')
     });
     
+    Cypress._.times(2, function(){ //repete o teste 2 vezes
+        it('Exibe mensagem por 3 segundos', () => {
+        cy.clock() // congela o relógio do navegador
+        cy.contains('button', 'Enviar').click()
+        cy.get('.error').should('be.visible')
+        cy.tick(threeSecondsInMs) // avança o relógio três segundos (em milissegundos). Avanço este tempo para não perdê-lo esperando.
+        cy.get('.error').should('not.be.visible')
+  
+     });
+
+    }) 
+
+    it('exibe e esconde as mensagens de sucesso e erro usando o .invoke', () => {
+        cy.get('.success')
+          .should('not.be.visible')
+          .invoke('show') //você pode forçar a exibição de um elemento HTML que esteja escondido, com um estilo 
+          .should('be.visible')
+          .and('contain', 'Mensagem enviada com sucesso.')
+          .invoke('hide') //você pode esconder um elemento que está sendo exibido.
+          .should('not.be.visible')
+        cy.get('.error')
+          .should('not.be.visible')
+          .invoke('show')
+          .should('be.visible')
+          .and('contain', 'Valide os campos obrigatórios!')
+          .invoke('hide')
+          .should('not.be.visible')
+      })
+
+    it('Preenche a area de texto usando o comando invoke', () => {
+        const longText = Cypress._.repeat('0123456789', 20)
+
+        cy.get('#open-text-area')
+            .invoke('val', longText)
+            .should('have.value', longText)
+    });  
+
+    it('Faz uma requisição HTTP', () => {
+        cy.request('https://cac-tat.s3.eu-central-1.amazonaws.com/index.html')
+        .should(function(response){
+            const {status, statusText, body} = response //desestruturando um objeto
+            expect(status).to.equal(200)
+            expect(statusText).to.equal('OK')
+            expect(body).to.include('CAC TAT')
+        })
+    });
+
+    it.only('Encontra o gato escondido', () => {
+        cy.get('#cat')
+          .invoke('show')  
+          .should('be.visible')
+        cy.get('#title')
+          .invoke('text', 'CAT TAT')  
+         
+    });
     
 });
